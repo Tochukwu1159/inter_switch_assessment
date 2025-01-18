@@ -1,37 +1,37 @@
 package com.interswitch.assessment.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @Entity
+@Table(name = "customers")
 public class Customer {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Name is required")
-    private String name;
-
-    @NotBlank(message = "Email is required")
+    @Column(nullable = false, unique = true)
     private String email;
 
-    @OneToOne(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private SavingsAccount savingsAccount;
+    @Column(nullable = false)
+    private String firstName;
 
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
-    private Set<Loan> loans = new HashSet<>();
+    @Column(nullable = false)
+    private String lastName;
 
-    // Getters and setters
+    @Column(nullable = false, unique = true)
+    private String phoneNumber;
+
+    @Column(nullable = false)
+    private String address;
+
+    // Getters and Setters
 }
-

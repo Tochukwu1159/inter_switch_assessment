@@ -1,22 +1,20 @@
 package com.interswitch.assessment.service.impl;
 
-package com.interswitch.assessment.service.impl;
-
-import com.interswitch.assessment.dtos.LoanRequestDTO;
-import com.interswitch.assessment.dtos.LoanResponseDTO;
-import com.interswitch.assessment.model.Customer;
+import com.interswitch.assessment.dtos.LoanApprovalRequest;
+import com.interswitch.assessment.dtos.LoanRequest;
+import com.interswitch.assessment.dtos.LoanResponse;
 import com.interswitch.assessment.model.Loan;
-import com.interswitch.assessment.model.SavingsAccount;
-import com.interswitch.assessment.repository.CustomerRepository;
+import com.interswitch.assessment.model.LoanRepaymentSchedule;
+import com.interswitch.assessment.repository.LoanRepaymentScheduleRepository;
 import com.interswitch.assessment.repository.LoanRepository;
-import com.interswitch.assessment.repository.SavingsAccountRepository;
+import com.interswitch.assessment.service.AccountService;
 import com.interswitch.assessment.service.LoanService;
+import com.interswitch.assessment.utils.LoanStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.List;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -26,100 +24,84 @@ public class LoanServiceImpl implements LoanService {
     private LoanRepository loanRepository;
 
     @Autowired
-    private SavingsAccountRepository savingsAccountRepository;
+    private LoanRepaymentScheduleRepository repaymentScheduleRepository;
 
     @Autowired
-    private CustomerRepository customerRepository;
+    private AccountService accountService;
 
-    @Transactional
-    @Override
-    public void repayLoans() {
-        // 1. Find all unpaid loans
-        List<Loan> loans = loanRepository.findByIsPaidOff(false);
+    public LoanResponse requestLoan(LoanRequest request) {
+        Optional<Loan> activeLoan = loanRepository.findFirstByAccountNumberAndStatus(request.getAccountNumber(), LoanStatus.APPROVED);
+        if (activeLoan.isPresent()) {
+            throw new IllegalArgumentException("You must repay your previous loan before requesting a new one.");
+        }
 
-        for (Loan loan : loans) {
-            // 2. Calculate 10% of the loan amount
-            BigDecimal repaymentAmount = loan.getAmount() * 0.1;
+        // Create Loan
+        Loan loan = new Loan();
+        loan.setAccountNumber(request.getAccountNumber());
+        loan.setAmount(request.getAmount());
+        loan.setOutstandingBalance(request.getAmount());
+        loan.setStatus(LoanStatus.REQUESTED);
+        loan.setRequestDate(LocalDateTime.now());
+        loanRepository.save(loan);
 
-            // 3. Get the customer's savings account
-            Customer customer = loan.getCustomer();
-            SavingsAccount savingsAccount = savingsAccountRepository.findByCustomerId(customer.getId());
+        return new LoanResponse(
+                loan.getId(),
+                loan.getAccountNumber(),
+                loan.getAmount(),
+                loan.getStatus(),
+                loan.getOutstandingBalance(),
+                loan.getRequestDate(),
+                null
+        );
+    }
 
-            if (savingsAccount != null && savingsAccount.getBalance().compareTo(repaymentAmount) >= 0) {
-                savingsAccount.setBalance(savingsAccount.getBalance().subtract(repaymentAmount));
-            }
+    public LoanResponse approveOrRejectLoan(LoanApprovalRequest request) {
+        Loan loan = loanRepository.findById(request.getLoanId())
+                .orElseThrow(() -> new IllegalArgumentException("Loan not found"));
 
+        Optional<Loan> existingLoan = loanRepository.findFirstByAccountNumberAndStatus(loan.getAccountNumber(), LoanStatus.APPROVED);
+        if (existingLoan.isPresent()) {
+            throw new IllegalArgumentException("The customer already has an approved loan.");
+        }
 
-            // 5. Update the loan repayment status
-            loan.setAmount(loan.getAmount() - repaymentAmount);
-            if (loan.getAmount() <= 0) {
-                loan.setIsPaidOff(true);  // Mark loan as paid off if fully repaid
-            }
+        if (loan.getStatus() != LoanStatus.REQUESTED) {
+            throw new IllegalArgumentException("Only requested loans can be approved or rejected.");
+        }
 
-            // Save the updated savings account and loan
-            savingsAccountRepository.save(savingsAccount);
-            loanRepository.save(loan);
+        // we can have additional checks like calculateDebtToIncomeRatio, maximum loan amount due to customer tier status/level, etc
+
+        if (request.getApprove()) {
+            loan.setStatus(LoanStatus.APPROVED);
+            loan.setApprovalDate(LocalDateTime.now());
+            loan.setRepaymentStartDate(LocalDateTime.now().plusMonths(1));
+            createRepaymentSchedule(loan);
+        } else {
+            loan.setStatus(LoanStatus.REJECTED);
+            loan.setRejectReason(request.getRejectReason());
+        }
+
+        loanRepository.save(loan);
+
+        return new LoanResponse(
+                loan.getId(),
+                loan.getAccountNumber(),
+                loan.getAmount(),
+                loan.getStatus(),
+                loan.getOutstandingBalance(),
+                loan.getRequestDate(),
+                loan.getApprovalDate()
+        );
+    }
+
+    private void createRepaymentSchedule(Loan loan) {
+        double monthlyRepayment = loan.getAmount() / 10;
+
+        for (int i = 1; i <= 10; i++) {
+            LoanRepaymentSchedule schedule = new LoanRepaymentSchedule();
+            schedule.setLoan(loan);
+            schedule.setRepaymentDate(loan.getRepaymentStartDate().plusMonths(i));
+            schedule.setAmount(monthlyRepayment);
+            repaymentScheduleRepository.save(schedule);
         }
     }
 }
-
-@Override
-public LoanResponseDTO requestLoan(LoanRequestDTO loanRequestDTO, Long customerId) {
-    Optional<Customer> customerOpt = customerRepository.findById(customerId);
-    if (!customerOpt.isPresent()) {
-        throw new IllegalArgumentException("Customer not found.");
-    }
-
-    Customer customer = customerOpt.get();
-
-    // Check if the customer already has a pending or unpaid loan
-    List<Loan> loans = loanRepository.findByIsPaidOff(false);
-    if (!loans.isEmpty()) {
-        throw new IllegalStateException("Loan request denied. You have an unpaid loan.");
-    }
-
-    // Create new loan request
-    Loan newLoan = new Loan();
-    newLoan.setAmount(loanRequestDTO.getAmount());
-    newLoan.setCustomer(customer);
-    loanRepository.save(newLoan);
-
-    return mapToLoanResponseDTO(newLoan);
-}
-
-@Override
-public LoanResponseDTO approveLoan(Long loanId) {
-    Optional<Loan> loanOpt = loanRepository.findById(loanId);
-    if (!loanOpt.isPresent()) {
-        throw new IllegalArgumentException("Loan not found.");
-    }
-
-    Loan loan = loanOpt.get();
-    loan.setIsPaidOff(false);
-    loanRepository.save(loan);
-
-    return mapToLoanResponseDTO(loan);
-}
-
-@Override
-public LoanResponseDTO rejectLoan(Long loanId) {
-    Optional<Loan> loanOpt = loanRepository.findById(loanId);
-    if (!loanOpt.isPresent()) {
-        throw new IllegalArgumentException("Loan not found.");
-    }
-
-    Loan loan = loanOpt.get();
-    loanRepository.delete(loan);
-
-    return mapToLoanResponseDTO(loan);
-}
-
-private LoanResponseDTO mapToLoanResponseDTO(Loan loan) {
-    LoanResponseDTO loanResponseDTO = new LoanResponseDTO();
-    loanResponseDTO.setLoanId(loan.getId());
-    loanResponseDTO.setAmount(loan.getAmount());
-    loanResponseDTO.setIsPaidOff(loan.isPaidOff());
-    return loanResponseDTO;
-}
-}
-

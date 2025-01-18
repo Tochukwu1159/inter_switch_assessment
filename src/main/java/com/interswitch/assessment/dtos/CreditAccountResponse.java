@@ -8,8 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CustomerRequestDTO {
-    private String name;
-    private String email;
+public class CreditAccountResponse {
+    private String accountNumber;
+    private Double newBalance;
 }
-

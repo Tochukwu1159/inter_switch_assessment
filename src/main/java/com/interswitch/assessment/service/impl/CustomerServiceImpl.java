@@ -1,6 +1,7 @@
 package com.interswitch.assessment.service.impl;
 
-import com.interswitch.assessment.dtos.CustomerRequestDTO;
+import com.interswitch.assessment.dtos.CreateCustomerRequest;
+import com.interswitch.assessment.dtos.CreateCustomerResponse;
 import com.interswitch.assessment.model.Customer;
 import com.interswitch.assessment.repository.CustomerRepository;
 import com.interswitch.assessment.service.CustomerService;
@@ -16,21 +17,26 @@ public class CustomerServiceImpl implements CustomerService {
     private CustomerRepository customerRepository;
 
     @Override
-    public Customer createCustomer(CustomerRequestDTO customerRequestDTO) {
+    public CreateCustomerResponse createCustomer(CreateCustomerRequest request) {
+        if (customerRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email already in use.");
+        }
+
+        if (customerRepository.findByPhoneNumber(request.getPhoneNumber()).isPresent()) {
+            throw new IllegalArgumentException("Phone number already in use.");
+        }
+
         Customer customer = new Customer();
-        customer.setName(customerRequestDTO.getName());
-        customer.setEmail(customerRequestDTO.getEmail());
-        return customerRepository.save(customer);
-    }
+        customer.setEmail(request.getEmail());
+        customer.setFirstName(request.getFirstName());
+        customer.setLastName(request.getLastName());
+        customer.setPhoneNumber(request.getPhoneNumber());
+        customer.setAddress(request.getAddress());
 
-    @Override
-    public Optional<Customer> getCustomerByEmail(String email) {
-        return Optional.ofNullable(customerRepository.findByEmail(email));
-    }
+        Customer savedCustomer = customerRepository.save(customer);
 
-    @Override
-    public Optional<Customer> getCustomerById(Long customerId) {
-        return customerRepository.findById(customerId);
+        return new CreateCustomerResponse(savedCustomer.getId(),
+                savedCustomer.getEmail(),
+                savedCustomer.getFirstName() + " " + savedCustomer.getLastName());
     }
 }
-

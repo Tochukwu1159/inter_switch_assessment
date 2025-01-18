@@ -1,29 +1,31 @@
 package com.interswitch.assessment.controller;
 
-import com.interswitch.assessment.dtos.LoanRequestDTO;
-import com.interswitch.assessment.dtos.LoanResponseDTO;
+import com.interswitch.assessment.dtos.*;
+import com.interswitch.assessment.model.Loan;
 import com.interswitch.assessment.service.LoanService;
+import com.interswitch.assessment.utils.LoanRepaymentJob;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 @RestController
-@RequestMapping("/loans")
+@RequestMapping("/api/v1/loans")
 public class LoanController {
 
     @Autowired
     private LoanService loanService;
+    @Autowired
+    LoanRepaymentJob loanRepaymentJob;
 
     @PostMapping("/request")
-    public LoanResponseDTO requestLoan(@RequestBody LoanRequestDTO loanRequestDTO, @RequestParam Long customerId) {
-        return loanService.requestLoan(loanRequestDTO, customerId);
+    public ResponseEntity<LoanResponse> requestLoan(@Valid @RequestBody LoanRequest request) {
+        return ResponseEntity.status(HttpStatus.OK).body(loanService.requestLoan(request));
     }
 
-    @PostMapping("/{loanId}/approve")
-    public LoanResponseDTO approveLoan(@PathVariable Long loanId) {
-        return loanService.approveLoan(loanId);
+    @PostMapping("/approve")
+    public ResponseEntity<LoanResponse> approveOrRejectLoan(@Valid @RequestBody LoanApprovalRequest request) {
+        return ResponseEntity.status(HttpStatus.OK).body(loanService.approveOrRejectLoan(request));
     }
 
-    @PostMapping("/{loanId}/reject")
-    public LoanResponseDTO rejectLoan(@PathVariable Long loanId) {
-        return loanService.rejectLoan(loanId);
-    }
 }

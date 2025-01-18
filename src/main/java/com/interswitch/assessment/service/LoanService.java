@@ -1,11 +1,8 @@
 package com.interswitch.assessment.service;
 
-import com.interswitch.assessment.dtos.LoanRequestDTO;
-import com.interswitch.assessment.dtos.LoanResponseDTO;
+import com.interswitch.assessment.dtos.*;
 
 public interface LoanService {
-    void repayLoans();
-    LoanResponseDTO rejectLoan(Long loanId);
-    LoanResponseDTO requestLoan(LoanRequestDTO loanRequestDTO, Long customerId);
-    LoanResponseDTO approveLoan(Long loanId);
+    LoanResponse requestLoan(LoanRequest request);
+    LoanResponse approveOrRejectLoan(LoanApprovalRequest request);
 }

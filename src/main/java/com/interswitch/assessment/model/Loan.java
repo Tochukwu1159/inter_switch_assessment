@@ -1,13 +1,12 @@
 package com.interswitch.assessment.model;
 
+import com.interswitch.assessment.utils.LoanStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -15,21 +14,34 @@ import java.math.BigDecimal;
 @Builder
 @Entity
 public class Loan {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NotNull
-    private BigDecimal amount;
+    private String accountNumber;
 
-    private Boolean isApproved;
+    @NotNull
+    private Double amount;
 
-    private Boolean isPaidOff;
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    private LoanStatus status; // REQUESTED, APPROVED, REJECTED, COMPLETED
 
-    @ManyToOne
-    @JoinColumn(name = "customer_id")
-    private Customer customer;
+    private LocalDateTime requestDate;
 
-    // Getters and setters
+    private LocalDateTime approvalDate;
+
+    private String rejectReason;
+
+    private LocalDateTime repaymentStartDate;
+
+    private Double outstandingBalance;
+
+    @OneToMany(mappedBy = "loan", cascade = CascadeType.ALL)
+    @ToString.Exclude
+    private List<LoanRepaymentSchedule> repaymentSchedules;
+
+    // Getters and Setters
 }
-
