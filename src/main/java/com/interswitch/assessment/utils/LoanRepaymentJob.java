@@ -7,6 +7,7 @@ import com.interswitch.assessment.repository.LoanRepaymentScheduleRepository;
 import com.interswitch.assessment.repository.LoanRepository;
 import com.interswitch.assessment.service.AccountService;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -15,18 +16,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class LoanRepaymentJob {
 
-    @Autowired
-    private LoanRepaymentScheduleRepository repaymentScheduleRepository;
+    private final LoanRepaymentScheduleRepository repaymentScheduleRepository;
 
-    @Autowired
-    private AccountService accountService;
-    @Autowired
-    private LoanRepository loanRepository;
+    private final AccountService accountService;
 
-    @Scheduled(cron = "${loan.repayment.cron}") // Externalize cron expression
-//@Scheduled(cron = "0 0/2 * * * *") // for test
+    private final LoanRepository loanRepository;
+
+//    @Scheduled(cron = "${loan.repayment.cron}") // Externalize cron expression
+@Scheduled(cron = "0 0/2 * * * *") // for test
     @Transactional
     public void processLoanRepayments() {
         List<LoanRepaymentSchedule> dueRepayments = repaymentScheduleRepository

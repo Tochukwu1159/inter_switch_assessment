@@ -8,16 +8,17 @@ import com.interswitch.assessment.repository.SavingsAccountRepository;
 import com.interswitch.assessment.repository.TransactionRepository;
 import com.interswitch.assessment.service.AccountService;
 import com.interswitch.assessment.utils.TransactionType;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AccountServiceImpl implements AccountService {
 
-    @Autowired
-    private SavingsAccountRepository savingsAccountRepository;
-    @Autowired
-    private TransactionRepository transactionRepository;
+
+    private final SavingsAccountRepository savingsAccountRepository;
+    private final TransactionRepository transactionRepository;
 
     @Override
     public CreditAccountResponse debit(CreditAccountRequest request) {

@@ -5,11 +5,14 @@ import com.interswitch.assessment.dtos.LoanRequest;
 import com.interswitch.assessment.dtos.LoanResponse;
 import com.interswitch.assessment.model.Loan;
 import com.interswitch.assessment.model.LoanRepaymentSchedule;
+import com.interswitch.assessment.model.SavingsAccount;
 import com.interswitch.assessment.repository.LoanRepaymentScheduleRepository;
 import com.interswitch.assessment.repository.LoanRepository;
+import com.interswitch.assessment.repository.SavingsAccountRepository;
 import com.interswitch.assessment.service.AccountService;
 import com.interswitch.assessment.service.LoanService;
 import com.interswitch.assessment.utils.LoanStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,18 +21,21 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class LoanServiceImpl implements LoanService {
 
-    @Autowired
-    private LoanRepository loanRepository;
 
-    @Autowired
-    private LoanRepaymentScheduleRepository repaymentScheduleRepository;
+    private final LoanRepository loanRepository;
 
-    @Autowired
-    private AccountService accountService;
+    private final LoanRepaymentScheduleRepository repaymentScheduleRepository;
+
+    private final SavingsAccountRepository savingsAccountRepository;
 
     public LoanResponse requestLoan(LoanRequest request) {
+
+        SavingsAccount savingsAccount = savingsAccountRepository.findByAccountNumber(request.getAccountNumber())
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
         Optional<Loan> activeLoan = loanRepository.findFirstByAccountNumberAndStatus(request.getAccountNumber(), LoanStatus.APPROVED);
         if (activeLoan.isPresent()) {
             throw new IllegalArgumentException("You must repay your previous loan before requesting a new one.");

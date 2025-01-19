@@ -5,16 +5,18 @@ import com.interswitch.assessment.dtos.CreateCustomerResponse;
 import com.interswitch.assessment.model.Customer;
 import com.interswitch.assessment.repository.CustomerRepository;
 import com.interswitch.assessment.service.CustomerService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class CustomerServiceImpl implements CustomerService {
 
-    @Autowired
-    private CustomerRepository customerRepository;
+
+    private final CustomerRepository customerRepository;
 
     @Override
     public CreateCustomerResponse createCustomer(CreateCustomerRequest request) {

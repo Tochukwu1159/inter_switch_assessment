@@ -9,19 +9,21 @@ import com.interswitch.assessment.repository.CustomerRepository;
 import com.interswitch.assessment.repository.SavingsAccountRepository;
 import com.interswitch.assessment.service.CustomerService;
 import com.interswitch.assessment.service.SavingsAccountService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 
 @Service
+@RequiredArgsConstructor
 public class SavingsAccountServiceImpl implements SavingsAccountService {
 
-    @Autowired
-    private SavingsAccountRepository savingsAccountRepository;
 
-    @Autowired
-    private CustomerRepository customerRepository;
+    private final SavingsAccountRepository savingsAccountRepository;
+
+
+    private final CustomerRepository customerRepository;
 
     @Override
     public CreateSavingsAccountResponse createSavingsAccount(CreateSavingsAccountRequest request) {

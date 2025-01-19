@@ -3,12 +3,14 @@ package com.interswitch.assessment.service.impl;
 import com.interswitch.assessment.dtos.StatementRequest;
 import com.interswitch.assessment.dtos.StatementResponse;
 import com.interswitch.assessment.dtos.TransactionResponse;
+import com.interswitch.assessment.model.SavingsAccount;
 import com.interswitch.assessment.model.Transaction;
+import com.interswitch.assessment.repository.SavingsAccountRepository;
 import com.interswitch.assessment.repository.TransactionRepository;
 import com.interswitch.assessment.service.StatementService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,9 +26,14 @@ public class StatementServiceImpl implements StatementService {
 
 
     private final  TransactionRepository transactionRepository;
+    private final SavingsAccountRepository savingsAccountRepository;
 
     @Override
     public StatementResponse getAccountStatement(StatementRequest request) {
+
+        SavingsAccount savingsAccount = savingsAccountRepository.findByAccountNumber(request.getAccountNumber())
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
         LocalDateTime startDate = request.getStartDate() != null
                 ? request.getStartDate().atStartOfDay()
                 : LocalDateTime.MIN;

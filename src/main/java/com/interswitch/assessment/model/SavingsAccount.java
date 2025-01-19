@@ -1,5 +1,6 @@
 package com.interswitch.assessment.model;
 
+import com.interswitch.assessment.utils.TransactionType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

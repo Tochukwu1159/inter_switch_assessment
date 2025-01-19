@@ -5,18 +5,17 @@ import com.interswitch.assessment.model.Loan;
 import com.interswitch.assessment.service.LoanService;
 import com.interswitch.assessment.utils.LoanRepaymentJob;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/v1/loans")
 public class LoanController {
 
-    @Autowired
-    private LoanService loanService;
-    @Autowired
-    LoanRepaymentJob loanRepaymentJob;
+    private final LoanService loanService;
 
     @PostMapping("/request")
     public ResponseEntity<LoanResponse> requestLoan(@Valid @RequestBody LoanRequest request) {
